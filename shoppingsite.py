@@ -7,6 +7,7 @@ Authors: Joel Burton, Christian Fernandez, Meggie Mahnken, Katie Byers.
 """
 
 from flask import Flask, render_template, redirect, flash, session
+from flask_debugtoolbar import DebugToolbarExtension
 import jinja2
 
 import melons
@@ -58,10 +59,12 @@ def show_melon(melon_id):
 def show_shopping_cart():
     """Display content of shopping cart."""
     # TODO: Display the contents of the shopping cart.
+    
     #cart with melon objects
     cart_list = []
     #total cost of entire purchase
     total_cost = 0
+    
     # The logic here will be something like:
     #
     # X get the cart dictionary from the session
@@ -78,22 +81,17 @@ def show_shopping_cart():
     # Make sure your function can also handle the case wherein no cart has
     # been added to the session
 
-    #retrieve melon object
-    print session['cart']
-    for melon_id in session['cart']:
+    cart = session.get('cart', {})
+
+    for melon_id, qty in cart.items():
         melon = melons.get_by_id(melon_id)
-        qty = session['cart'][melon_id]
-        print qty
-        melon_cost = qty * melon.price
-        print melon_cost
-        total_cost += melon_cost
-    print total_cost
+        total_melon_cost = qty * melon.price
+        total_cost += total_melon_cost
+        melon.qty = qty
+        melon.total_melon_cost = total_melon_cost
+        cart_list.append(melon)
 
-    qty.melon = qty
-    
-
-
-    return render_template("cart.html")
+    return render_template("cart.html", total_cost=total_cost, cart_list=cart_list)
 
 
 @app.route("/add_to_cart/<melon_id>")
@@ -103,7 +101,6 @@ def add_to_cart(melon_id):
     When a melon is added to the cart, redirect browser to the shopping cart
     page and display a confirmation message: 'Melon successfully added to
     cart'."""
-   
 
     if "cart" in session:
         #update the value of cart
@@ -163,4 +160,6 @@ def checkout():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run("0.0.0.0", debug=True)
+    app.debug = True
+    DebugToolbarExtension(app)
